@@ -303,7 +303,7 @@ def _face_identity_match(frame, face, profile) -> bool:
     if embedding:
         try:
             live_embedding = compute_face_embedding(frame, face)
-        except CalibrationError:
+        except Exception:
             return False
         return cosine_similarity(live_embedding, embedding) >= FACE_EMBED_MATCH_THRESHOLD
 
@@ -338,23 +338,27 @@ def landmarks_bbox(frame, landmarks, indices=None, pad=0.18):
 def draw_hud_panel(frame, lines, color=HUD_CYAN, title="VAULT OS \u25c8 LIVE SCAN"):
     """Semi-transparent readout panel with status text and accent rule."""
     height, width = frame.shape[:2]
-    panel_h = 34 + 24 * len(lines)
-    panel_w = min(width - 24, 460)
+    scale = max(0.55, min(1.0, height / 480.0))
+    title_size = round(0.55 * scale, 2)
+    line_size = round(0.52 * scale, 2)
+    line_gap = max(14, int(24 * scale))
+    panel_h = int(34 * scale) + line_gap * len(lines)
+    panel_w = min(width - 24, int(460 * scale))
 
     overlay = frame.copy()
     cv2.rectangle(overlay, (12, 12), (12 + panel_w, 12 + panel_h), PANEL_BG, -1)
-    cv2.rectangle(overlay, (12, 12), (12 + panel_w, 16), color, -1)
+    cv2.rectangle(overlay, (12, 12), (12 + panel_w, int(12 + 4 * scale)), color, -1)
     frame[:] = cv2.addWeighted(overlay, 0.62, frame, 0.38, 0)
 
-    cv2.putText(frame, title, (24, 34), cv2.FONT_HERSHEY_DUPLEX, 0.55, HUD_CYAN_DIM, 1, cv2.LINE_AA)
-    cv2.line(frame, (24, 42), (12 + panel_w - 12, 42), color, 1, cv2.LINE_AA)
+    cv2.putText(frame, title, (24, int(34 * scale)), cv2.FONT_HERSHEY_DUPLEX, title_size, HUD_CYAN_DIM, 1, cv2.LINE_AA)
+    cv2.line(frame, (24, int(42 * scale)), (12 + panel_w - 12, int(42 * scale)), color, 1, cv2.LINE_AA)
     cv2.line(frame, (18, panel_h + 8), (84, panel_h + 8), color, 1, cv2.LINE_AA)
     cv2.line(frame, (12 + panel_w - 84, panel_h + 8), (12 + panel_w - 18, panel_h + 8), color, 1, cv2.LINE_AA)
 
-    y = 66
+    y = int(66 * scale)
     for line in lines:
-        cv2.putText(frame, line, (24, y), cv2.FONT_HERSHEY_SIMPLEX, 0.52, color, 1, cv2.LINE_AA)
-        y += 24
+        cv2.putText(frame, line, (24, y), cv2.FONT_HERSHEY_SIMPLEX, line_size, color, 1, cv2.LINE_AA)
+        y += line_gap
 
 
 def draw_frame_reticle(frame, color=HUD_CYAN_DIM, size=22):
@@ -574,6 +578,7 @@ def ensure_window_open(window_name: str):
 
 def open_camera_window(window_name: str):
     cv2.namedWindow(window_name, cv2.WINDOW_NORMAL)
+    cv2.waitKey(100)
 
 
 def require_camera():
@@ -698,8 +703,8 @@ def capture_face_and_blink(capture, face_landmarker, use_embedding: bool):
                 if use_embedding:
                     try:
                         embedding_samples.append(compute_face_embedding(frame, face))
-                    except CalibrationError:
-                        # a single bad frame shouldn't abort enrollment
+                    except Exception:
+                        # a single bad frame or ONNX error shouldn't abort enrollment
                         pass
                 lines.append(f"Scanning face {len(face_samples)}/{FACE_CAPTURE_TARGET}")
                 lines.append("Hold still while the face scan settles.")
@@ -795,7 +800,6 @@ def capture_gesture(capture, hand_landmarker, hand_mode="single"):
     """hand_mode: 'single' enrolls one hand, 'double' requires both hands
     in frame and enrolls them as one combined template."""
     required_hands = 2 if hand_mode == "double" else 1
-    open_camera_window(ENROLLMENT_WINDOW)
     stable_samples = []
     hold_started = None
     hand_word = "both hands" if required_hands == 2 else "your chosen hand gesture"
@@ -813,11 +817,11 @@ def capture_gesture(capture, hand_landmarker, hand_mode="single"):
         lines = [f"Hold {hand_word} steady for {GESTURE_HOLD_SECONDS:.0f} seconds"]
         color = HUD_CYAN
 
-        for i, hand in enumerate(detected_hands):
+        for i, hand in enumerate(detected_hands[:required_hands]):
             draw_hand_skeleton(frame, hand, color=HUD_CYAN)
             bbox = landmarks_bbox(frame, hand, pad=0.25)
             draw_corner_brackets(frame, bbox, HUD_CYAN, size=18, thickness=2)
-            if len(detected_hands) > 1:
+            if required_hands > 1:
                 label_pt = _pt(hand[WRIST_INDEX], frame.shape[1], frame.shape[0])
                 cv2.putText(
                     frame, f"HAND {i + 1}", (label_pt[0] - 20, label_pt[1] + 24),
@@ -827,7 +831,7 @@ def capture_gesture(capture, hand_landmarker, hand_mode="single"):
         if len(detected_hands) >= required_hands:
             hands = detected_hands[:required_hands]
             if required_hands == 1 and len(detected_hands) > 1:
-                lines.append("Both hands visible. Tracking enrolled gesture.")
+                lines.append("Both hands visible. Tracking your dominant hand.")
             elif required_hands == 2:
                 for i, hand in enumerate(hands):
                     label_pt = _pt(hand[WRIST_INDEX], frame.shape[1], frame.shape[0])
@@ -1045,7 +1049,6 @@ def verify_face_and_blink(capture, face_landmarker, profile):
 
 
 def verify_gesture(capture, hand_landmarker, profile):
-    open_camera_window(VERIFICATION_WINDOW)
     hand_profile = profile["hand_profile"]
     expected_hands = hand_profile.get("hands") or [hand_profile["landmarks"]]
     required_hands = len(expected_hands)
@@ -1061,19 +1064,18 @@ def verify_gesture(capture, hand_landmarker, profile):
         timestamp_ms = int(time.time() * 1000)
         detected_hands = detect_hands(hand_landmarker, frame, timestamp_ms)
         draw_frame_reticle(frame)
-        hand_word = "both enrolled hand positions" if required_hands == 2 else "your enrolled hand gesture"
-        lines = [f"Verification: hold {hand_word}"]
+        lines = ["Verification: hold your enrolled gesture"]
         color = HUD_CYAN
 
         matched_hands = []
-        if required_hands == 1 and detected_hands:
-            diffs_by_hand = []
-            for hand in detected_hands:
-                normalized = normalize_hand_landmarks(hand)
-                diffs_by_hand.append((gesture_distance(normalized, expected_hands[0]), hand))
-            best_diff, best_hand = min(diffs_by_hand, key=lambda item: item[0])
-            matched = best_diff <= HAND_GESTURE_MATCH_THRESHOLD
-            matched_hands = [best_hand] if matched else []
+        if required_hands == 1:
+            if len(detected_hands) == 1:
+                normalized = normalize_hand_landmarks(detected_hands[0])
+                diff = gesture_distance(normalized, expected_hands[0])
+                matched = diff <= HAND_GESTURE_MATCH_THRESHOLD
+                matched_hands = [detected_hands[0]] if matched else []
+            else:
+                matched = False
         elif len(detected_hands) >= required_hands:
             hands = detected_hands[:required_hands]
             diffs = [
@@ -1097,8 +1099,16 @@ def verify_gesture(capture, hand_landmarker, profile):
                     cv2.FONT_HERSHEY_SIMPLEX, 0.45, hand_color, 1, cv2.LINE_AA,
                 )
 
-        if len(detected_hands) >= required_hands:
-            if matched:
+        if required_hands == 1:
+            if len(detected_hands) == 0:
+                hold_started = None
+                color = HUD_RED
+                lines.append("No hand detected.")
+            elif len(detected_hands) > 1:
+                hold_started = None
+                color = HUD_RED
+                lines.append("Reading gesture...")
+            elif matched:
                 color = HUD_GREEN
                 if hold_started is None:
                     hold_started = time.time()
@@ -1109,14 +1119,22 @@ def verify_gesture(capture, hand_landmarker, profile):
             else:
                 hold_started = None
                 lines.append("Reading gesture...")
-                if required_hands == 1 and len(detected_hands) > 1:
-                    lines.append("Both hands seen. Matching enrolled gesture.")
         else:
-            hold_started = None
-            color = HUD_RED
-            if required_hands == 2:
-                lines.append(f"Only {len(detected_hands)}/2 hands detected.")
+            if len(detected_hands) >= required_hands:
+                if matched:
+                    color = HUD_GREEN
+                    if hold_started is None:
+                        hold_started = time.time()
+                    elapsed = time.time() - hold_started
+                    lines.append(f"Hold progress: {elapsed:.1f}s / {VERIFY_GESTURE_HOLD_SECONDS:.1f}s")
+                    if elapsed >= VERIFY_GESTURE_HOLD_SECONDS:
+                        return
+                else:
+                    hold_started = None
+                    lines.append("Reading gesture...")
             else:
+                hold_started = None
+                color = HUD_RED
                 lines.append("No hand detected.")
 
         draw_hud_panel(frame, lines, color=color)

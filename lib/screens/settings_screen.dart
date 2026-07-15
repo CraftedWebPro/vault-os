@@ -262,44 +262,81 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<void> _showBiometricModal() {
     final passphraseController = TextEditingController();
     final gestureController = TextEditingController(text: 'Open palm');
+    bool twoHandGesture = false;
 
     return _openSettingsModal(
       title: 'Refresh Biometrics',
       subtitle:
           'This confirms the current passphrase and current biometrics first, then opens a fresh webcam enrollment and rotates the vault to the new biometric key.',
-      child: Column(
-        children: <Widget>[
-          TextField(
-            controller: passphraseController,
-            obscureText: true,
-            decoration: const InputDecoration(labelText: 'Current passphrase'),
-          ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: gestureController,
-            decoration: const InputDecoration(labelText: 'New gesture label'),
-          ),
-          const SizedBox(height: 14),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: FilledButton.icon(
-              onPressed: widget.controller.isBusy
-                  ? null
-                  : () async {
-                      if (gestureController.text.trim().isEmpty) {
-                        return;
-                      }
-
-                      await widget.controller.reEnrollBiometrics(
-                        currentPassphrase: passphraseController.text,
-                        newGestureLabel: gestureController.text.trim(),
-                      );
-                    },
-              icon: const Icon(Icons.fingerprint_outlined, size: 16),
-              label: const Text('Re-enroll biometrics'),
+      child: StatefulBuilder(
+        builder: (context, setModalState) => Column(
+          children: <Widget>[
+            TextField(
+              controller: passphraseController,
+              obscureText: true,
+              decoration: const InputDecoration(labelText: 'Current passphrase'),
             ),
-          ),
-        ],
+            const SizedBox(height: 12),
+            TextField(
+              controller: gestureController,
+              decoration: const InputDecoration(labelText: 'New gesture label'),
+            ),
+            const SizedBox(height: 16),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'Hand Enrollment',
+                style: VaultTheme.heading.copyWith(fontSize: 14),
+              ),
+            ),
+            const SizedBox(height: 6),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'One hand or both hands for the gesture check.',
+                style: VaultTheme.body.copyWith(fontSize: 12),
+              ),
+            ),
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: <Widget>[
+                _HandModeChip(
+                  label: 'One hand',
+                  selected: !twoHandGesture,
+                  onTap: () => setModalState(() => twoHandGesture = false),
+                ),
+                _HandModeChip(
+                  label: 'Both hands',
+                  selected: twoHandGesture,
+                  onTap: () => setModalState(() => twoHandGesture = true),
+                ),
+              ],
+            ),
+            const SizedBox(height: 14),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: FilledButton.icon(
+                onPressed: widget.controller.isBusy
+                    ? null
+                    : () async {
+                        if (gestureController.text.trim().isEmpty) {
+                          return;
+                        }
+
+                        await widget.controller.reEnrollBiometrics(
+                          currentPassphrase: passphraseController.text,
+                          newGestureLabel: gestureController.text.trim(),
+                          handMode: twoHandGesture ? 'double' : 'single',
+                        );
+                      },
+                icon: const Icon(Icons.fingerprint_outlined, size: 16),
+                label: const Text('Re-enroll biometrics'),
+              ),
+            ),
+          ],
+        ),
       ),
     ).whenComplete(() {
       passphraseController.dispose();
@@ -1068,6 +1105,47 @@ class _SettingsBanner extends StatelessWidget {
         border: Border.all(color: color.withValues(alpha: 0.36)),
       ),
       child: Text(message, style: TextStyle(color: color, fontSize: 12.5)),
+    );
+  }
+}
+
+class _HandModeChip extends StatelessWidget {
+  const _HandModeChip({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(VaultTheme.radiusSmall),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        decoration: BoxDecoration(
+          color: selected
+              ? VaultTheme.brass.withValues(alpha: 0.12)
+              : VaultTheme.surfaceRaised,
+          borderRadius: BorderRadius.circular(VaultTheme.radiusSmall),
+          border: Border.all(
+            color: selected
+                ? VaultTheme.brass.withValues(alpha: 0.45)
+                : VaultTheme.border,
+          ),
+        ),
+        child: Text(
+          label,
+          style: VaultTheme.body.copyWith(
+            color: selected ? VaultTheme.brass : Colors.white70,
+            fontSize: 13,
+          ),
+        ),
+      ),
     );
   }
 }

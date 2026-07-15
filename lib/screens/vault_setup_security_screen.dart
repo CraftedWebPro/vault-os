@@ -27,6 +27,8 @@ class VaultSetupSecurityScreen extends StatefulWidget {
 class _VaultSetupSecurityScreenState extends State<VaultSetupSecurityScreen> {
   bool _reuseCurrentSecurity = false;
   bool _showNewPassphrase = false;
+  bool _twoHandGesture = false;
+  String? _validationMessage;
   final _newPassphraseController = TextEditingController();
   final _confirmNewPassphraseController = TextEditingController();
   final _gestureController = TextEditingController(text: 'Open palm');
@@ -48,8 +50,10 @@ class _VaultSetupSecurityScreenState extends State<VaultSetupSecurityScreen> {
   }
 
   Future<void> _submit() async {
+    setState(() => _validationMessage = null);
     if (_reuseCurrentSecurity) {
       if (_currentPassphraseController.text.trim().isEmpty) {
+        setState(() => _validationMessage = 'Enter the current vault passphrase.');
         return;
       }
       await widget.controller.createVaultWithReusedSecurity(
@@ -59,13 +63,17 @@ class _VaultSetupSecurityScreenState extends State<VaultSetupSecurityScreen> {
       );
     } else {
       if (_newPassphraseController.text.trim().length < 10) {
+        setState(() =>
+            _validationMessage = 'Passphrase must be at least 10 characters.');
         return;
       }
       if (_newPassphraseController.text !=
           _confirmNewPassphraseController.text) {
+        setState(() => _validationMessage = 'Passphrases do not match.');
         return;
       }
       if (_gestureController.text.trim().isEmpty) {
+        setState(() => _validationMessage = 'Give your gesture a name.');
         return;
       }
       await widget.controller.createVaultWithNewSecurity(
@@ -73,6 +81,7 @@ class _VaultSetupSecurityScreenState extends State<VaultSetupSecurityScreen> {
         parentDirectory: widget.parentDirectory,
         passphrase: _newPassphraseController.text,
         gestureLabel: _gestureController.text.trim(),
+        handMode: _twoHandGesture ? 'double' : 'single',
       );
     }
 
@@ -247,6 +256,41 @@ class _VaultSetupSecurityScreenState extends State<VaultSetupSecurityScreen> {
                                     labelText: 'Gesture name',
                                   ),
                                 ),
+                                const SizedBox(height: 16),
+                                const Text(
+                                  'Hand Enrollment',
+                                  style: VaultTheme.heading,
+                                ),
+                                const SizedBox(height: 6),
+                                const Text(
+                                  'Choose whether to enroll one hand or both hands for the gesture check.',
+                                  style: VaultTheme.body,
+                                ),
+                                const SizedBox(height: 12),
+                                Wrap(
+                                  spacing: 12,
+                                  runSpacing: 12,
+                                  children: <Widget>[
+                                    _ModeCard(
+                                      title: 'One hand',
+                                      subtitle:
+                                          'Enroll a single hand gesture. Simpler and faster.',
+                                      selected: !_twoHandGesture,
+                                      onTap: () => setState(
+                                        () => _twoHandGesture = false,
+                                      ),
+                                    ),
+                                    _ModeCard(
+                                      title: 'Both hands',
+                                      subtitle:
+                                          'Enroll both hands together. More secure but requires both hands in frame.',
+                                      selected: _twoHandGesture,
+                                      onTap: () => setState(
+                                        () => _twoHandGesture = true,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ],
                               const SizedBox(height: 14),
                               _InfoNote(
@@ -264,18 +308,71 @@ class _VaultSetupSecurityScreenState extends State<VaultSetupSecurityScreen> {
                                       ],
                               ),
                               const SizedBox(height: 18),
-                              SizedBox(
-                                width: double.infinity,
-                                child: FilledButton(
-                                  onPressed: controller.isBusy ? null : _submit,
-                                  child: Text(
-                                    controller.isBusy
-                                        ? 'Preparing vault...'
-                                        : _reuseCurrentSecurity
-                                        ? 'Create Vault With Current Security'
-                                        : 'Create Vault And Start Enrollment',
-                                  ),
-                                ),
+                              ListenableBuilder(
+                                listenable: controller,
+                                builder: (context, _) {
+                                  return Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.stretch,
+                                    children: <Widget>[
+                                      if (_validationMessage != null) ...<Widget>[
+                                        Container(
+                                          width: double.infinity,
+                                          padding: const EdgeInsets.symmetric(
+                                              horizontal: 12, vertical: 10),
+                                          decoration: BoxDecoration(
+                                            color: Colors.redAccent
+                                                .withValues(alpha: 0.12),
+                                            borderRadius: BorderRadius.circular(
+                                                VaultTheme.radiusSmall),
+                                            border: Border.all(
+                                                color: Colors.redAccent
+                                                    .withValues(alpha: 0.36)),
+                                          ),
+                                          child: Text(
+                                            _validationMessage!,
+                                            style: const TextStyle(
+                                                color: Colors.redAccent,
+                                                fontSize: 12.5),
+                                          ),
+                                        ),
+                                        const SizedBox(height: 10),
+                                      ],
+                                      if (controller.isBusy &&
+                                          controller.statusMessage != null)
+                                        Padding(
+                                          padding:
+                                              const EdgeInsets.only(bottom: 10),
+                                          child: Text(
+                                            controller.statusMessage!,
+                                            style: VaultTheme.body.copyWith(
+                                                fontSize: 13,
+                                                color: Colors.white60),
+                                          ),
+                                        ),
+                                      SizedBox(
+                                        width: double.infinity,
+                                        child: FilledButton(
+                                          onPressed:
+                                              controller.isBusy ? null : _submit,
+                                          child: controller.isBusy
+                                              ? const SizedBox(
+                                                  width: 18,
+                                                  height: 18,
+                                                  child: CircularProgressIndicator(
+                                                      strokeWidth: 2,
+                                                      color: Colors.white70),
+                                                )
+                                              : Text(
+                                                  _reuseCurrentSecurity
+                                                      ? 'Create Vault With Current Security'
+                                                      : 'Create Vault And Start Enrollment',
+                                                ),
+                                        ),
+                                      ),
+                                    ],
+                                  );
+                                },
                               ),
                             ],
                           ),

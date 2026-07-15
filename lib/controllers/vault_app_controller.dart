@@ -128,6 +128,7 @@ class VaultAppController extends ChangeNotifier {
     required String parentDirectory,
     required String passphrase,
     required String gestureLabel,
+    String handMode = 'single',
   }) async {
     await _runBusy(
       'Opening webcam enrollment for face, blink, and hand gesture capture...',
@@ -139,6 +140,13 @@ class VaultAppController extends ChangeNotifier {
         );
         final bioKey = _cryptoService.randomBytes(_cryptoService.keyLength);
         final vaultKey = _cryptoService.xor(userKey, bioKey);
+
+        final profile = await _pythonBiometricService.enroll(
+          gestureLabel: gestureLabel,
+          bioKeyBase64: base64Encode(bioKey),
+          handMode: handMode,
+        );
+
         final vaultDirectory = await _storageService.prepareVaultDirectory(
           parentDirectory,
         );
@@ -159,11 +167,6 @@ class VaultAppController extends ChangeNotifier {
           wallpaperAsset: defaultWallpaperAsset,
         );
 
-        final profile = await _pythonBiometricService.enroll(
-          gestureLabel: gestureLabel,
-          bioKeyBase64: base64Encode(bioKey),
-          handMode: 'double',
-        );
         await _storageService.writeEncryptedProfile(
           targetPath: profilePath,
           profile: profile,
@@ -679,6 +682,7 @@ class VaultAppController extends ChangeNotifier {
   Future<void> reEnrollBiometrics({
     required String currentPassphrase,
     required String newGestureLabel,
+    String handMode = 'single',
   }) async {
     final config = selectedVault;
     if (config == null) {
@@ -716,7 +720,7 @@ class VaultAppController extends ChangeNotifier {
         final enrolledProfile = await _pythonBiometricService.enroll(
           gestureLabel: newGestureLabel,
           bioKeyBase64: base64Encode(newBioKey),
-          handMode: 'double',
+          handMode: handMode,
         );
 
         final newVaultKey = _cryptoService.xor(currentUserKey, newBioKey);

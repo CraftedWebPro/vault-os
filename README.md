@@ -16,7 +16,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/CraftedWebPro/vault-os/releases/download/1.0.2/VaultOS-Setup.exe">
+  <a href="https://github.com/CraftedWebPro/vault-os/releases/download/1.0.3/VaultOS-Setup.exe">
     <img src="https://img.shields.io/badge/download-VaultOS%20Installer-blueviolet?style=for-the-badge" alt="Download Installer" />
   </a>
 </p>
@@ -149,19 +149,19 @@ If enough people want it, I'll build it.
 
 ## Releases
 
-**Easiest way to get Vault OS:** [Download the installer directly](https://github.com/CraftedWebPro/vault-os/releases/download/1.0.2/VaultOS-Setup.exe) (~250 MB).
+**Easiest way to get Vault OS:** [Download the installer directly](https://github.com/CraftedWebPro/vault-os/releases/download/1.0.3/VaultOS-Setup.exe) (~71 MB).
 
 Just run `VaultOS-Setup.exe`, follow the prompts, and you're done. The installer handles everything — Python packages, model files, shortcuts, the works. No terminal commands, no manual setup, no "wait, which folder was it?"
 
-Want to see what's in each release? Check the [Release Notes](https://github.com/CraftedWebPro/vault-os/releases/tag/1.0.2).
+Want to see what's in each release? Check the [Release Notes](https://github.com/CraftedWebPro/vault-os/releases/tag/1.0.3).
 
 If you don't want to set up Flutter and Python by hand, this is the path for you. Click, install, done.
 
 For the adventurous folks who want to run from source or poke around the code, keep reading below.
 
-### Why is the installer ~250 MB?
+### Why is the installer ~71 MB?
 
-No, we didn't accidentally bundle a game engine. The installer ships with three AI models — one for your face, one for your hand, and one for confirming it's actually you and not a poster of you. These things aren't exactly featherweight. But hey, at least none of them are crypto miners. That's more than most "free" software can say.
+Because your face, your blink, and your hand gesture each need their own AI model to work. Turns out, when you pick the right models, you don't need 250 MB to do it. Same vault, same security, just less dead weight. No bloatware, no crypto miners, no secret Bitcoin wallets. Just math that stares at you until it recognizes you.
 
 ## Project Setup
 
