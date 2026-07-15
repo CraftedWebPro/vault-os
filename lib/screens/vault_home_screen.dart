@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:path/path.dart' as path;
 
 import '../controllers/vault_app_controller.dart';
+import '../models/credits_info.dart';
 import '../models/preview_payload.dart';
 import '../models/vault_entry.dart';
 import 'settings_screen.dart';
@@ -225,6 +226,7 @@ class _VaultHomeScreenState extends State<VaultHomeScreen> {
                           }
                           setState(_syncSelection);
                         },
+                        onReveal: () => controller.revealFile(entry),
                       );
                     },
                   ),
@@ -365,6 +367,12 @@ class _VaultHomeScreenState extends State<VaultHomeScreen> {
             onPressed: () => Navigator.of(context).pushNamed(SettingsScreen.routeName),
             icon: const Icon(Icons.tune_outlined, size: 15),
             label: const Text('Settings'),
+          ),
+          const SizedBox(width: 8),
+          OutlinedButton.icon(
+            onPressed: () => CreditsInfo.launchDonation(),
+            icon: const Icon(Icons.favorite_outline, size: 15),
+            label: const Text('Support'),
           ),
           const SizedBox(width: 20),
         ],
@@ -839,6 +847,7 @@ class _VaultRow extends StatelessWidget {
     required this.onTap,
     required this.onOpen,
     required this.onDelete,
+    required this.onReveal,
   });
 
   final VaultEntry entry;
@@ -847,6 +856,7 @@ class _VaultRow extends StatelessWidget {
   final VoidCallback onTap;
   final VoidCallback onOpen;
   final VoidCallback onDelete;
+  final VoidCallback onReveal;
 
   IconData get _icon {
     switch (_kindFor(entry)) {
@@ -903,13 +913,55 @@ class _VaultRow extends StatelessWidget {
               color: VaultTheme.textSecondary,
             ),
             IconButton(
-              onPressed: busy ? null : onDelete,
+              onPressed: onReveal,
+              icon: const Icon(Icons.folder_open_outlined, size: 17),
+              tooltip: 'Open in Explorer',
+              color: VaultTheme.textSecondary,
+            ),
+            IconButton(
+              onPressed: busy
+                  ? null
+                  : () => _showDeleteConfirmation(context),
               icon: const Icon(Icons.delete_outline, size: 17),
               tooltip: 'Delete',
               color: VaultTheme.danger,
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _showDeleteConfirmation(BuildContext context) {
+    showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: VaultTheme.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(VaultTheme.radius),
+          side: const BorderSide(color: VaultTheme.border),
+        ),
+        title: const Text('Delete File', style: VaultTheme.heading),
+        content: Text(
+          'Are you sure you want to delete "${entry.displayName}"? This action cannot be undone.',
+          style: VaultTheme.body,
+        ),
+        actions: <Widget>[
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              onDelete();
+            },
+            style: FilledButton.styleFrom(
+              backgroundColor: VaultTheme.danger,
+            ),
+            child: const Text('Delete'),
+          ),
+        ],
       ),
     );
   }

@@ -939,6 +939,21 @@ class VaultAppController extends ChangeNotifier {
     }
   }
 
+  Future<void> revealFile(VaultEntry entry) async {
+    if (selectedVault == null || _vaultKey == null) {
+      return;
+    }
+    final filePath = '${workspaceDirectory!}${Platform.pathSeparator}${entry.relativePath}';
+    if (Platform.isWindows) {
+      await Process.run('explorer.exe', <String>['/select,', filePath]);
+      return;
+    }
+    final file = File(filePath);
+    if (await file.exists()) {
+      await Process.run('open', <String>['-R', filePath]);
+    }
+  }
+
   Future<void> deleteEntry(VaultEntry entry) async {
     if (selectedVault == null || _vaultKey == null) {
       return;

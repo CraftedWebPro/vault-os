@@ -12,17 +12,18 @@ Future<void> main() async {
     await windowManager.ensureInitialized();
 
     const windowOptions = WindowOptions(
-      size: Size(1440, 900),
+      size: Size(1366, 768),
       center: true,
+      backgroundColor: Colors.transparent,
+      skipTaskbar: false,
       titleBarStyle: TitleBarStyle.hidden,
+      fullScreen: false,
     );
 
     await windowManager.waitUntilReadyToShow(windowOptions, () async {
       await windowManager.show();
-      await windowManager.maximize();
-      await Future<void>.delayed(const Duration(milliseconds: 120));
       await windowManager.setResizable(false);
-      await windowManager.setMaximizable(true);
+      await windowManager.maximize();
       await windowManager.focus();
     });
   }

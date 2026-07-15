@@ -1,27 +1,47 @@
-# Vault OS
+<p align="center">
+  <img src="assets/images/banner.png" alt="Vault OS banner" width="100%" />
+</p>
 
-![Platform](https://img.shields.io/badge/platform-Windows-blue)
-![Built With](https://img.shields.io/badge/built%20with-Flutter-46c3f7)
-![Biometric Bridge](https://img.shields.io/badge/biometric-Python%20%2B%20OpenCV-gold)
-![Status](https://img.shields.io/badge/status-active-2ea043)
-![License](https://img.shields.io/badge/license-PolyForm%20Noncommercial-orange)
+<p align="center">
+  <img src="https://img.shields.io/badge/platform-Windows-blue" alt="Platform" />
+  <img src="https://img.shields.io/badge/built%20with-Flutter-46c3f7" alt="Built With" />
+  <img src="https://img.shields.io/badge/biometric-Python%20%2B%20OpenCV-gold" alt="Biometric Bridge" />
+  <img src="https://img.shields.io/badge/status-active-2ea043" alt="Status" />
+  <img src="https://img.shields.io/badge/license-PolyForm%20Noncommercial-orange" alt="License" />
+</p>
 
-Vault OS is a local-first desktop vault for Windows.
+<p align="center">
+  A local-first, hidden vault for Windows — unlocked by your passphrase, your face, your blink, and a gesture only you know.<br />
+  No cloud. No account. No "we value your privacy" email six months before a breach notice.
+</p>
 
-It lets you create hidden vaults on your own machine, lock them with a master passphrase, and add biometric checks like:
+---
 
-- face match
-- double blink
-- custom hand gesture
+## Table of Contents
 
-When you unlock the vault, it opens a working space for your files.  
-When you lock it again, everything gets encrypted back into the hidden vault folder.
+- [Why I Made This](#why-i-made-this)
+- [What Vault OS Does](#what-vault-os-does)
+- [How It Works](#how-it-works)
+- [Screenshots](#screenshots)
+- [Current Stack](#current-stack)
+- [Current Platform](#current-platform)
+- [Releases](#releases)
+- [Project Setup](#project-setup)
+- [First-Time Use](#first-time-use)
+- [Importing Files](#importing-files)
+- [Recovery / Rescan](#recovery--rescan)
+- [Important Notes](#important-notes)
+- [Troubleshooting](#troubleshooting)
+- [Repo Notes](#repo-notes)
+- [Folder Overview](#folder-overview)
+- [Support](#support)
+- [License](#license)
 
-Simple idea: your files stay with you, not on someone else's server.
+---
 
 ## Why I Made This
 
-I first made Vault OS for myself.
+I first made Vault OS for myself. I wanted somewhere to put files I didn't want syncing to a server I don't control, and every "private" cloud tool I found still wanted an account, an internet connection, or my trust — usually all three.
 
 I wanted something that:
 
@@ -31,21 +51,23 @@ I wanted something that:
 - feels private
 - does not depend on cloud syncing
 
-Then I thought, if I already want this for myself, maybe other people want the same thing too.
+I didn't want another app asking me to sign up before it would let me hide my own files on my own computer. So I built the thing I actually wanted: a vault that lives on my machine, opens for my face and nobody else's (well — mostly, see the [Face Scan](#screenshots) notes below), and doesn't care whether the internet exists.
 
-So I decided to make it open and share it.
+Then I figured, if I already wanted this badly enough to build it, someone else probably does too. So here it is.
 
 ## What Vault OS Does
 
 Vault OS helps you:
 
 - create one or more hidden vaults
-- use passphrase + biometrics to unlock them
-- import files into the vault workspace
-- lock everything back into encrypted storage
+- unlock them with a passphrase **and** biometrics — face, blink, gesture
+- import files into a working vault space
+- lock everything back into encrypted storage when you're done
 - switch between multiple vaults
-- rescan and recover vaults if local app state is lost
-- change passphrase, refresh biometrics, and manage wallpapers from settings
+- rescan and recover a vault if the app's local state ever goes missing
+- change your passphrase, refresh biometrics, and manage wallpapers from settings
+
+Basically: your files disappear into a folder that looks like nothing, and only open back up for you.
 
 ## How It Works
 
@@ -56,7 +78,7 @@ Each vault stores:
 - encrypted biometric profile data
 - recovery info needed to reconnect the vault later
 
-Unlock flow:
+**Unlock flow**
 
 1. Choose a vault
 2. Enter the passphrase
@@ -65,15 +87,17 @@ Unlock flow:
 5. Hold the enrolled hand gesture
 6. Vault workspace opens
 
-Lock flow:
+**Lock flow**
 
-1. Workspace contents are packed back into the vault
+1. Workspace contents get packed back into the vault
 2. Metadata is updated
-3. The unlocked workspace is cleared
+3. The unlocked workspace is wiped clean
+
+No half-open state hanging around — it's either sealed or it's open, nothing in between.
 
 ## Screenshots
 
-I will keep adding screenshots here as the app grows.
+I'll keep adding screenshots here as the app grows.
 
 ### Theme Collection
 
@@ -81,17 +105,11 @@ Theme picker with built-in wallpaper options.
 
 ![Theme Collection](assets/screenshots/themes-collection.webp)
 
-### Face Scan
+### Biometric Scan
 
-Face verification flow during enrollment or unlock.
+Live face and hand verification, side by side — the app checks your face, waits for a double blink, then reads your enrolled hand gesture, all in one webcam session.
 
-![Face Scan](assets/screenshots/face-scan.webp)
-
-### Gesture Enrollment
-
-Custom gesture capture using the webcam.
-
-![Gesture Enrollment](assets/screenshots/gesture-enrollment.webp)
+![Biometric Scan](assets/screenshots/biometric-scan.webp)
 
 ### Vault Home
 
@@ -117,28 +135,28 @@ Settings screen for wallpapers, security, recovery, and vault tools.
 
 ## Current Platform
 
-- Windows supported now
-- macOS not done yet
+- Windows — supported now
+- macOS — not done yet
 
-If you want a macOS version too, message me on Instagram: **[@riki_vivek](https://instagram.com/riki_vivek)**  
-If enough people want it, I will work on that too.
+If you want a macOS version too, message me on Instagram: **[@riki_vivek](https://instagram.com/riki_vivek)**
+If enough people want it, I'll build it.
 
 ## Releases
 
-I will upload ready-to-use app builds in the **GitHub Releases** section.
+Ready-to-use app builds go in the **GitHub Releases** section.
 
-So if you do not want to set up Flutter and Python manually, you can just:
+So if you don't want to set up Flutter and Python by hand, you can just:
 
 1. go to Releases
 2. download the release zip
 3. extract it
 4. run the app
 
-That will be the easiest way for normal users.
+That's the easiest path for most people. The setup below is for anyone who wants to run it from source or poke around the code.
 
 ## Project Setup
 
-If you want to run the project from source, follow this step by step.
+Running this from source takes a few steps — none of them hard, just sequential. Follow them in order and you'll be fine.
 
 ### 1. Install Flutter
 
@@ -163,7 +181,7 @@ flutter doctor
 
 For Flutter Windows apps, you need Visual Studio with the **Desktop development with C++** workload.
 
-If Flutter Doctor complains about Windows toolchain, fix that first.
+If `flutter doctor` complains about the Windows toolchain, fix that first — everything downstream depends on it.
 
 ### 4. Install Python
 
@@ -216,7 +234,7 @@ Required files:
 - `hand_landmarker.task`
 - `face_embedding.onnx`
 
-The face embedding model is used for:
+The face embedding model handles:
 
 - face alignment
 - embedding extraction
@@ -226,11 +244,13 @@ One example source used for the face model:
 
 - [OpenVINO ArcFace ONNX model](https://storage.openvinotoolkit.org/repositories/open_model_zoo/public/2022.1/face-recognition-resnet100-arcface-onnx/arcfaceresnet100-8.onnx)
 
-After download, rename it to:
+After downloading, rename it to:
 
 ```text
 face_embedding.onnx
 ```
+
+These three files aren't in the repo on purpose — they're large, and everyone's setup should point at a model they've actually checked the license on. See [Repo Notes](#repo-notes) for why.
 
 ### 9. Run The App
 
@@ -240,6 +260,8 @@ From the project root:
 flutter run -d windows
 ```
 
+If it opens and asks you to create a vault, you did it right.
+
 ## First-Time Use
 
 1. Open the app
@@ -247,11 +269,13 @@ flutter run -d windows
 3. Choose a parent folder
 4. Continue to security
 5. Set a master passphrase
-6. Start webcam enrollment
+6. Start webcam enrollment or Webcam app of your phone on same wifi (eg:Iriun Webcam)
 7. Align your face
 8. Blink twice
 9. Hold your chosen gesture
 10. Vault opens
+
+Ten steps sounds like a lot written out, but it's about ninety seconds in practice — most of that is just holding still for the webcam.
 
 ## Importing Files
 
@@ -261,26 +285,38 @@ You can add files by:
 - `Add Files`
 - `Import Files`
 
-Files go into the unlocked workspace first, then back into encrypted storage when locked.
+Files go into the unlocked workspace first, then back into encrypted storage the moment you lock the vault.
 
 ## Recovery / Rescan
 
-If local app state is lost but your vault folders still exist:
+If the local app state is lost but your vault folders still exist on disk:
 
 1. open the app
 2. choose recovery / rescan
 3. select the folder to scan
 
-You can also do this later from Settings.
+You can also do this later from Settings, if you're not in the middle of a small panic.
 
 ## Important Notes
 
-- deleting app state does not automatically delete your vault data
-- deleting the actual vault folder destroys the data
+Read this part. Genuinely.
+
+- deleting app state does **not** automatically delete your vault data
+- deleting the actual vault folder **does** destroy the data — no undo, no recycle bin, no second chance
 - renaming or manually editing vault files can break unlock or recovery
-- this app protects privacy, but it cannot recover files if the vault folder itself is deleted
+- this app protects privacy, but it cannot bring files back if the vault folder itself is gone
+
+Basically: the app is forgiving about its own state, but not about you deleting the vault folder directly. Treat that folder the way you'd treat the only copy of something important — because it is.
 
 ## Troubleshooting
+
+### Those error messages are intentional
+
+If the app throws an error in your face during unlock — wrong passphrase, face not recognized, blink missed, gesture drifted — that's not a crash. That's the vault doing its job.
+
+Vault OS is built to be paranoid on purpose. It would rather reject you ten times than let the wrong person in once. So if you see a red error box, read it, fix whatever it's complaining about, and try again. The app isn't broken. It's just... careful.
+
+Think of it like a bouncer who actually checks IDs.
 
 ### Python not found
 
@@ -294,7 +330,7 @@ python --version
 
 Check these:
 
-- webcam is not being used by another app
+- webcam isn't being used by another app (yes, that video call you forgot to close)
 - Python dependencies are installed
 - all required model files are present inside `python_service/models/`
 
@@ -310,32 +346,30 @@ flutter run -d windows
 
 ### Recovery does not find the vault
 
-- choose the exact vault folder or its parent folder
+- choose the exact vault folder, or its parent folder
 - make sure the vault files still exist on disk
 
 ## Repo Notes
 
 This repo does not track local-only folders and big runtime files such as:
 
-- `.codebase-memory/`
-- `codebackup/`
 - `md_files/`
 - `python_service/models/`
 - Python cache files
 
-That is done on purpose so the repo stays clean.
+That's on purpose, so the repo stays clean and nobody accidentally commits a 90MB face recognition model.
 
 ## Folder Overview
 
-- `lib/` -> Flutter UI, controllers, services, models
-- `python_service/` -> biometric service and model integration
-- `assets/themes/` -> wallpapers
-- `assets/images/` -> logos and static images
-- `assets/json/` -> lottie and animation files
+- `lib/` → Flutter UI, controllers, services, models
+- `python_service/` → biometric service and model integration
+- `assets/themes/` → wallpapers
+- `assets/images/` → logos and static images
+- `assets/json/` → lottie and animation files
 
 ## Support
 
-If you like the project, use it, test it, or share it.
+If you like the project, use it, test it, or share it — that's genuinely all the support I need.
 
 If you want to reach me:
 
@@ -345,6 +379,6 @@ If you want to reach me:
 
 This project is licensed under the **PolyForm Noncommercial License 1.0.0**.
 
-So people can use it, learn from it, and modify it for non-commercial use. Just do not turn it into a business and start selling my vault's gym homework.
+So people can use it, learn from it, and modify it for non-commercial use. Just don't turn it into a business and start selling my vault's gym homework.
 
 See [LICENSE](LICENSE) for full details.

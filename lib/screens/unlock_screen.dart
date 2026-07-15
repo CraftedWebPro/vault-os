@@ -84,6 +84,11 @@ class _UnlockScreenState extends State<UnlockScreen> {
                   const SizedBox(height: 20),
                   if (controller.errorMessage != null) ...<Widget>[
                     _InlineMessage(tone: PillTone.danger, message: controller.errorMessage!),
+                    const SizedBox(height: 4),
+                    const Text(
+                      'Yes, this is on purpose. The vault is picky — it\'s a feature, not a bug.',
+                      style: VaultTheme.caption,
+                    ),
                     const SizedBox(height: 10),
                   ],
                   if (controller.statusMessage != null) ...<Widget>[

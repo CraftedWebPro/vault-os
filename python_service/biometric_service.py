@@ -32,8 +32,7 @@ RIGHT_EYE_RING = (362, 385, 387, 263, 373, 380)
 NOSE_BRIDGE = (6, 168, 197, 195, 5, 4, 1, 19, 94, 2)
 MOUTH_RING = (61, 146, 91, 181, 84, 17, 314, 405, 321, 375, 291)
 
-# Standard 21-point MediaPipe hand skeleton, used to draw a full rig
-# instead of a loose cloud of dots.
+# full hand skeleton rig — all 21 joints connected
 HAND_CONNECTIONS = (
     (0, 1), (0, 5), (9, 13), (13, 17), (5, 9), (0, 17),
     (1, 2), (2, 3), (3, 4),
@@ -47,16 +46,15 @@ WRIST_INDEX = 0
 MIDDLE_MCP_INDEX = 9
 GESTURE_HOLD_SECONDS = 2.0
 VERIFY_GESTURE_HOLD_SECONDS = 1.2
-# The landmarker always looks for up to two hands; whether a *profile*
-# requires one or both is a per-enrollment choice (see --hands / hand_mode).
+# the landmarker looks for up to 2 hands; whether a profile needs
+# one or both is a per-enrollment choice (--hands / hand_mode)
 MAX_HANDS = 2
 HAND_MODE_CHOICES = ("single", "double")
 HAND_GESTURE_MATCH_THRESHOLD = 0.55
 BLINK_WINDOW_SECONDS = 8.0
-# A single frame under threshold is not a blink — it's usually landmark
-# jitter, a head tilt, or a slight move toward/away from the camera. Require
-# the EAR to stay past the threshold for this many consecutive frames
-# before flipping state, in both directions.
+# a single frame under threshold isn't a blink — it's usually landmark
+# jitter or a head tilt. require EAR to stay past threshold for a few
+# consecutive frames before flipping state, both directions.
 BLINK_CONSEC_FRAMES = 3
 FACE_CAPTURE_TARGET = 30
 FACE_MATCH_TOLERANCE = 0.14
@@ -67,8 +65,7 @@ ENROLLMENT_WINDOW = "Vault OS Enrollment"
 VERIFICATION_WINDOW = "Vault OS Verification"
 
 # ---------------------------------------------------------------------------
-# HUD palette (BGR, as OpenCV expects) — a scan-line / heads-up-display look
-# instead of raw green wireframes and flat yellow dots.
+# HUD palette (BGR, as OpenCV expects) — scan-line / heads-up-display look
 # ---------------------------------------------------------------------------
 HUD_CYAN = (255, 246, 90)        # primary scan color
 HUD_CYAN_DIM = (150, 140, 40)    # faint guide lines / idle reticle
@@ -153,12 +150,10 @@ def normalize_hand_landmarks(landmarks):
         raise CalibrationError("Hand landmarks are too small to normalize.")
     scaled = translated / scale
 
-    # Rotate in-plane (around the camera axis) so wrist -> middle-finger-MCP
-    # always points the same direction. Without this, holding the exact
-    # same gesture at a slightly different wrist angle shifts every
-    # landmark's x/y and fails the match even though the finger shape is
-    # identical — this is what made the gesture feel like it needed a
-    # precise angle. Only x/y are rotated; z (depth) is left alone.
+    # Rotate in-plane so wrist -> middle-finger-MCP always points the same
+    # direction. Without this, holding the same gesture at a different wrist
+    # angle shifts every landmark and fails the match even though the finger
+    # shape is identical. Only x/y are rotated; z (depth) is left alone.
     ref_x, ref_y = scaled[MIDDLE_MCP_INDEX][0], scaled[MIDDLE_MCP_INDEX][1]
     angle = math.atan2(ref_y, ref_x)
     target_angle = -math.pi / 2  # canonical: middle finger points "up"
@@ -187,27 +182,24 @@ def gesture_distance(first, second) -> float:
 
 
 # ---------------------------------------------------------------------------
-# Face recognition (identity) via a pluggable ONNX embedding model.
+# Face recognition via ONNX embedding model.
 #
-# normalized_face_metrics() above is a coarse first-pass filter — three
-# ratios of face geometry, no texture or fine structure, so two people with
-# similar face proportions can pass it. This section adds a real identity
-# check on top of it, the same approach ArcFace/FaceNet-style face
-# recognition uses: align the face to a canonical pose, run it through an
-# embedding model, and compare embeddings by cosine similarity.
+# normalized_face_metrics() is a coarse first-pass — just three ratios of
+# face geometry, no texture or fine structure. Two people with similar face
+# proportions can pass it. This section adds a real identity check on top:
+# align the face, run it through an embedding model, compare by cosine
+# similarity.
 #
-# Setup required on your end:
-#   1. Get a 112x112-input, ArcFace-style ONNX face embedding model
-#      (512-d output is standard). CHECK ITS LICENSE before shipping it in
-#      a paid product — a lot of pretrained face-recognition weights are
-#      research/non-commercial only, which matters since this is a
-#      commercial product.
-#   2. Drop it in the same `models/` folder as face_landmarker.task, named
-#      face_embedding.onnx (or change FACE_EMBED_MODEL_NAME below).
+# Setup:
+#   1. Get a 112x112-input ArcFace-style ONNX face embedding model
+#      (512-d output is standard). CHECK ITS LICENSE before shipping in
+#      a paid product — lots of pretrained face-recognition weights are
+#      research/non-commercial only.
+#   2. Drop it in models/ as face_embedding.onnx (or change the constant below).
 #   3. pip install onnxruntime
 #
 # Profiles enrolled before this was added won't have a face_embedding, so
-# verification falls back to the old ratio-based check for those — see
+# verification falls back to the old ratio-based check — see
 # _face_identity_match below.
 # ---------------------------------------------------------------------------
 
@@ -234,7 +226,7 @@ _face_embedder = None
 def _get_face_embedder():
     global _face_embedder
     if _face_embedder is None:
-        import onnxruntime  # lazy import so the rest of the app works without it installed
+        import onnxruntime  # lazy import so the rest works without it
 
         _face_embedder = onnxruntime.InferenceSession(
             resolve_model_path(FACE_EMBED_MODEL_NAME),
@@ -244,10 +236,9 @@ def _get_face_embedder():
 
 
 def face_embedder_available() -> bool:
-    """Checked once up front so enroll()/verify() can decide whether to run
-    real identity matching or fall back to the ratio-only geometry check —
-    and so we can tell the caller which one actually happened, instead of
-    silently downgrading security without telling anyone."""
+    """Check if the face embedding model is loadable. Called once up front
+    so enroll()/verify() can decide whether to run real identity matching
+    or fall back to ratio-only geometry check."""
     try:
         _get_face_embedder()
         return True
@@ -275,10 +266,8 @@ def _face_landmark_pixels(frame, landmarks):
 
 
 def align_face(frame, landmarks):
-    """Warp the face into a canonical 112x112 crop using a 5-point
-    similarity transform — the alignment convention ArcFace-style models
-    expect, built from landmarks we already have (eyes, nose, mouth
-    corners), no extra detection pass needed."""
+    """Warp face into canonical 112x112 crop using 5-point similarity
+    transform — the alignment ArcFace-style models expect."""
     src = _face_landmark_pixels(frame, landmarks)
     matrix, _ = cv2.estimateAffinePartial2D(src, _ARC_FACE_TEMPLATE, method=cv2.LMEDS)
     if matrix is None:
@@ -347,8 +336,7 @@ def landmarks_bbox(frame, landmarks, indices=None, pad=0.18):
 
 
 def draw_hud_panel(frame, lines, color=HUD_CYAN, title="VAULT OS \u25c8 LIVE SCAN"):
-    """Semi-transparent readout panel so status text stays legible over any
-    background, with a thin accent rule underneath it."""
+    """Semi-transparent readout panel with status text and accent rule."""
     height, width = frame.shape[:2]
     panel_h = 34 + 24 * len(lines)
     panel_w = min(width - 24, 460)
@@ -370,8 +358,7 @@ def draw_hud_panel(frame, lines, color=HUD_CYAN, title="VAULT OS \u25c8 LIVE SCA
 
 
 def draw_frame_reticle(frame, color=HUD_CYAN_DIM, size=22):
-    """Fixed viewfinder corner brackets on the whole frame — reads as an
-    active scanning session even before a face or hand is found."""
+    """Fixed viewfinder corner brackets on the whole frame."""
     height, width = frame.shape[:2]
     margin = 10
     draw_corner_brackets(frame, (margin, margin, width - margin, height - margin), color, size=size, thickness=1)
@@ -389,8 +376,7 @@ def draw_corner_brackets(frame, bbox, color, size=18, thickness=2):
 
 
 def draw_scan_sweep(frame, bbox, color=HUD_CYAN, period=1.6):
-    """A horizontal scan line ping-pongs across the bounding box, with a
-    soft trailing glow — the classic sci-fi 'capturing' effect."""
+    """Horizontal scan line that ping-pongs across the bounding box."""
     x1, y1, x2, y2 = bbox
     if y2 <= y1:
         return
@@ -451,8 +437,8 @@ def draw_landmarks(frame, landmarks, color, radius=1):
 
 
 def _catmull_rom(points, samples_per_segment=6):
-    """Interpolate a smooth curve through sparse points so a 36-point face
-    oval reads as a round curve instead of a faceted polygon."""
+    """Smooth curve through sparse points so the face oval looks round
+    instead of faceted."""
     pts = np.array(points, dtype=np.float32)
     n = len(pts)
     if n < 4:
@@ -484,6 +470,7 @@ def draw_polyline(frame, landmarks, indices, color, closed=False, thickness=1, s
 
 
 def draw_hand_skeleton(frame, landmarks, color=HUD_CYAN):
+    """Draw connected hand skeleton with joint dots."""
     height, width = frame.shape[:2]
     points = [_pt(lm, width, height) for lm in landmarks]
     for a, b in HAND_CONNECTIONS:
@@ -495,13 +482,8 @@ def draw_hand_skeleton(frame, landmarks, color=HUD_CYAN):
 
 
 def draw_face_mesh_background(frame, landmarks, color=HUD_CYAN_DIM):
-    """Faint scatter of the full landmark set plus the fine feature
-    contours (eyes, nose bridge, mouth), drawn under the bright foreground
-    outline. This is what actually sells "real point-tracking happening",
-    since the geometry the app runs on is this full mesh, not just the
-    single outer oval — the oval alone looked like a static viewfinder
-    guide rather than a live scan.
-    """
+    """Faint scatter of the full landmark set plus fine feature contours
+    (eyes, nose bridge, mouth) drawn under the bright foreground outline."""
     height, width = frame.shape[:2]
     overlay = frame.copy()
     for index in range(0, len(landmarks), 8):  # sparse hint, not a visible face mask
@@ -515,11 +497,8 @@ def draw_face_mesh_background(frame, landmarks, color=HUD_CYAN_DIM):
 
 
 def draw_eye_state(frame, landmarks, ear, threshold, width, height):
-    """Traces both eye contours and visibly reacts to blink state: green
-    ring while open, amber ring plus a line drawn straight across the lid
-    the instant EAR drops under the blink threshold. This is the part that
-    actually shows the blink being read, instead of a static ring that
-    never changes regardless of what your eyes are doing."""
+    """Trace eye contours and react to blink state: green while open,
+    amber plus a line across the lid when EAR drops under threshold."""
     is_closed = ear < threshold
     color = HUD_AMBER if is_closed else HUD_GREEN
     for indices in (LEFT_EYE_RING, RIGHT_EYE_RING):
@@ -536,10 +515,8 @@ def draw_eye_state(frame, landmarks, ear, threshold, width, height):
 def draw_face_overlay(frame, landmarks, phase="scanning", ear=None, threshold=None, progress=0.0):
     """phase: 'scanning' (capturing/matching) or 'locked' (matched, reading eyes).
 
-    Layering: the dim full mesh goes down first (draw_face_mesh_background),
-    then the bright outer contour + corner brackets on top of it, so the
-    scan reads as "dense tracking underneath, clean readout on top" rather
-    than either a bare oval or an overwhelming wireframe mask.
+    Layering: dim full mesh underneath, bright outer contour + corner
+    brackets on top. Dense tracking below, clean readout above.
     """
     color = HUD_CYAN if phase == "scanning" else HUD_GREEN
     height, width = frame.shape[:2]
@@ -659,11 +636,10 @@ def detect_face(face_landmarker, frame, timestamp_ms):
 
 
 def detect_hands(hand_landmarker, frame, timestamp_ms, max_hands=MAX_HANDS):
-    """Returns up to `max_hands` detected hands, ordered by wrist x-position
-    (left-to-right as shown on screen). The ordering is what lets a
-    two-hand gesture be compared position-by-position against the enrolled
-    template without relying on MediaPipe's own Left/Right handedness label,
-    which gets confusing once the preview frame is mirrored."""
+    """Returns up to max_hands detected, ordered by wrist x-position
+    (left-to-right as shown on screen). The ordering lets a two-hand
+    gesture be compared position-by-position against the enrolled
+    template without relying on MediaPipe's Left/Right handedness label."""
     result = hand_landmarker.detect_for_video(frame_to_mp_image(frame), timestamp_ms)
     hands = list(result.hand_landmarks) if result.hand_landmarks else []
     hands.sort(key=lambda landmarks: landmarks[WRIST_INDEX].x)
@@ -671,7 +647,7 @@ def detect_hands(hand_landmarker, frame, timestamp_ms, max_hands=MAX_HANDS):
 
 
 def detect_hand(hand_landmarker, frame, timestamp_ms):
-    """Single-hand convenience wrapper, kept for any single-hand call site."""
+    """Single-hand convenience wrapper."""
     hands = detect_hands(hand_landmarker, frame, timestamp_ms, max_hands=1)
     return hands[0] if hands else None
 
@@ -723,20 +699,15 @@ def capture_face_and_blink(capture, face_landmarker, use_embedding: bool):
                     try:
                         embedding_samples.append(compute_face_embedding(frame, face))
                     except CalibrationError:
-                        # A single bad alignment frame shouldn't abort
-                        # enrollment; we just skip it and keep the rest.
+                        # a single bad frame shouldn't abort enrollment
                         pass
                 lines.append(f"Scanning face {len(face_samples)}/{FACE_CAPTURE_TARGET}")
                 lines.append("Hold still while the face scan settles.")
             else:
                 if baseline_ear is None:
-                    # Use a high percentile rather than the plain mean: if you
-                    # blinked even once during the ~1s capture window above,
-                    # a couple of low-EAR frames would otherwise drag the
-                    # "resting" baseline down and make the threshold too
-                    # sensitive to jitter afterwards. The 85th percentile
-                    # reflects your normal open-eye EAR even if a stray blink
-                    # snuck into the sample.
+                    # use 85th percentile rather than plain mean — if you
+                    # blinked during capture, low-EAR frames drag the
+                    # baseline down and make threshold too sensitive
                     baseline_ear = float(np.percentile(ear_samples, 85))
                 threshold = baseline_ear * 0.82
                 now = time.time()
@@ -788,9 +759,7 @@ def capture_face_and_blink(capture, face_landmarker, use_embedding: bool):
                         }
                         averaged_embedding = None
                         if embedding_samples:
-                            # Average the unit embeddings then re-normalize —
-                            # the standard way to build one template vector
-                            # from several enrollment frames.
+                            # average the unit embeddings then re-normalize
                             mean_vec = np.mean(np.array(embedding_samples, dtype=np.float32), axis=0)
                             norm = np.linalg.norm(mean_vec)
                             if norm > 1e-6:
@@ -823,11 +792,8 @@ def capture_face_and_blink(capture, face_landmarker, use_embedding: bool):
 
 
 def capture_gesture(capture, hand_landmarker, hand_mode="single"):
-    """hand_mode: 'single' enrolls a one-hand gesture (existing behavior).
-    'double' requires both hands in frame at once and enrolls the pair as
-    one combined gesture — each hand is tracked and normalized separately,
-    then stored as a 2-element template so verification can check each
-    hand independently."""
+    """hand_mode: 'single' enrolls one hand, 'double' requires both hands
+    in frame and enrolls them as one combined template."""
     required_hands = 2 if hand_mode == "double" else 1
     open_camera_window(ENROLLMENT_WINDOW)
     stable_samples = []
@@ -861,7 +827,7 @@ def capture_gesture(capture, hand_landmarker, hand_mode="single"):
         if len(detected_hands) >= required_hands:
             hands = detected_hands[:required_hands]
             if required_hands == 1 and len(detected_hands) > 1:
-                lines.append("Both hands are visible. Tracking one enrolled gesture quietly.")
+                lines.append("Both hands visible. Tracking enrolled gesture.")
             elif required_hands == 2:
                 for i, hand in enumerate(hands):
                     label_pt = _pt(hand[WRIST_INDEX], frame.shape[1], frame.shape[0])
@@ -942,10 +908,8 @@ def enroll(gesture: str, bio_key: str, hand_mode: str = "single") -> dict:
         message = "Enrollment profile created from live webcam calibration (face embedding matching enabled)."
     else:
         # No embedding model available (missing onnxruntime or
-        # models/face_embedding.onnx) or every capture frame failed to
-        # align. Enrollment still succeeds, but on the weaker ratio-only
-        # check — say so explicitly rather than letting the profile look
-        # identical to a real-identity one.
+        # models/face_embedding.onnx) or alignment failed. Enrollment
+        # still succeeds but on the weaker ratio-only check.
         security_level = "basic_geometry"
         message = (
             "Enrollment profile created from live webcam calibration. "
@@ -968,13 +932,9 @@ def enroll(gesture: str, bio_key: str, hand_mode: str = "single") -> dict:
 
 def verify_face_and_blink(capture, face_landmarker, profile):
     open_camera_window(VERIFICATION_WINDOW)
-    # NOTE ON VERIFICATION MESSAGING:
-    # Unlike enrollment, this loop never reveals *how close* a match is
-    # (no deltas, no distance numbers) and never suggests specific
-    # corrections. Adaptive feedback here would let anyone standing at
-    # the webcam iteratively converge on your face/gesture profile by
-    # trial and error. The status text below stays the same regardless
-    # of how near or far the current frame is from a match.
+    # NOTE: no distance readout or corrective hints here — status text is
+    # the same regardless of how close the current frame is from a match.
+    # Adaptive feedback would let anyone iteratively converge on your profile.
     baseline_ear = profile["blink_profile"]["resting_ear"]
     threshold = baseline_ear * 0.82
     stage_started_at = time.time()
@@ -1086,13 +1046,7 @@ def verify_face_and_blink(capture, face_landmarker, profile):
 
 def verify_gesture(capture, hand_landmarker, profile):
     open_camera_window(VERIFICATION_WINDOW)
-    # See the note in verify_face_and_blink: no distance readout, no
-    # corrective hints. Status text is identical whether the gesture is
-    # close or far from correct.
     hand_profile = profile["hand_profile"]
-    # "hands" is the current schema (list of 1 or 2 templates); "landmarks"
-    # is the older single-hand-only schema, kept working for profiles
-    # enrolled before two-hand support existed.
     expected_hands = hand_profile.get("hands") or [hand_profile["landmarks"]]
     required_hands = len(expected_hands)
     hold_started = None
@@ -1156,7 +1110,7 @@ def verify_gesture(capture, hand_landmarker, profile):
                 hold_started = None
                 lines.append("Reading gesture...")
                 if required_hands == 1 and len(detected_hands) > 1:
-                    lines.append("Both hands seen. Matching the enrolled one without giving it away.")
+                    lines.append("Both hands seen. Matching enrolled gesture.")
         else:
             hold_started = None
             color = HUD_RED
