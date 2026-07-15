@@ -39,6 +39,9 @@ class Win32Window {
   // Show the current window. Returns true if the window was successfully shown.
   bool Show();
 
+  // Sets the Win32 show state used the first time the window is shown.
+  void SetShowState(int show_state);
+
   // Release OS resources associated with window.
   void Destroy();
 
@@ -97,6 +100,9 @@ class Win32Window {
 
   // window handle for hosted content.
   HWND child_content_ = nullptr;
+
+  // Initial show state used by ShowWindow.
+  int show_state_ = SW_SHOWNORMAL;
 };
 
 #endif  // RUNNER_WIN32_WINDOW_H_

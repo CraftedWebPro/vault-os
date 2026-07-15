@@ -150,7 +150,7 @@ bool Win32Window::Create(const std::wstring& title,
 }
 
 bool Win32Window::Show() {
-  return ShowWindow(window_handle_, SW_SHOWNORMAL);
+  return ShowWindow(window_handle_, show_state_);
 }
 
 // static
@@ -257,6 +257,10 @@ RECT Win32Window::GetClientArea() {
 
 HWND Win32Window::GetHandle() {
   return window_handle_;
+}
+
+void Win32Window::SetShowState(int show_state) {
+  show_state_ = show_state;
 }
 
 void Win32Window::SetQuitOnClose(bool quit_on_close) {

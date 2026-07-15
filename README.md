@@ -15,6 +15,12 @@
   No cloud. No account. No "we value your privacy" email six months before a breach notice.
 </p>
 
+<p align="center">
+  <a href="https://github.com/CraftedWebPro/vault-os/releases">
+    <img src="https://img.shields.io/badge/download-VaultOS%20Installer-blueviolet?style=for-the-badge" alt="Download Installer" />
+  </a>
+</p>
+
 ---
 
 ## Table of Contents
@@ -143,20 +149,23 @@ If enough people want it, I'll build it.
 
 ## Releases
 
-Ready-to-use app builds go in the **GitHub Releases** section.
+**Easiest way to get Vault OS:** Download the installer from [GitHub Releases](https://github.com/CraftedWebPro/vault-os/releases).
 
-So if you don't want to set up Flutter and Python by hand, you can just:
+Just run `VaultOS-Setup.exe`, follow the prompts, and you're done. The installer handles everything — Python packages, model files, shortcuts, the works. No terminal commands, no manual setup, no "wait, which folder was it?"
 
-1. go to Releases
-2. download the release zip
-3. extract it
-4. run the app
+If you don't want to set up Flutter and Python by hand, this is the path for you. Click, install, done.
 
-That's the easiest path for most people. The setup below is for anyone who wants to run it from source or poke around the code.
+For the adventurous folks who want to run from source or poke around the code, keep reading below.
+
+### Why is the installer ~250 MB?
+
+No, we didn't accidentally bundle a game engine. The installer ships with three AI models — one for your face, one for your hand, and one for confirming it's actually you and not a poster of you. These things aren't exactly featherweight. But hey, at least none of them are crypto miners. That's more than most "free" software can say.
 
 ## Project Setup
 
-Running this from source takes a few steps — none of them hard, just sequential. Follow them in order and you'll be fine.
+**Don't want to do any of this?** Just grab the installer from [Releases](https://github.com/CraftedWebPro/vault-os/releases) and skip the rest of this page.
+
+For the rest of you — running from source takes a few steps — none of them hard, just sequential. Follow them in order and you'll be fine.
 
 ### 1. Install Flutter
 
@@ -320,11 +329,13 @@ Think of it like a bouncer who actually checks IDs.
 
 ### Python not found
 
-Make sure this works:
+If you're running from source, make sure this works:
 
 ```powershell
 python --version
 ```
+
+**Using the installer?** The installer will warn you if Python is missing. You can still install Vault OS, but biometric features won't work until you install Python from [python.org](https://www.python.org/downloads/windows/) and add it to PATH.
 
 ### Webcam not working
 

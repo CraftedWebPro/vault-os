@@ -58,3 +58,12 @@ python_service/*.pth
 python_service/*.pt
 python_service/*.ckpt
 python_service/*.weights
+python_service/*.exe
+python_service/*.spec
+python_service/build/
+python_service/dist/
+
+# Installer output
+installer/output/
+installer/*.exe
+installer/*.iss
