@@ -16,7 +16,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/CraftedWebPro/vault-os/releases">
+  <a href="https://github.com/CraftedWebPro/vault-os/releases/download/1.0.2/VaultOS-Setup.exe">
     <img src="https://img.shields.io/badge/download-VaultOS%20Installer-blueviolet?style=for-the-badge" alt="Download Installer" />
   </a>
 </p>
@@ -149,9 +149,11 @@ If enough people want it, I'll build it.
 
 ## Releases
 
-**Easiest way to get Vault OS:** Download the installer from [GitHub Releases](https://github.com/CraftedWebPro/vault-os/releases).
+**Easiest way to get Vault OS:** [Download the installer directly](https://github.com/CraftedWebPro/vault-os/releases/download/1.0.2/VaultOS-Setup.exe) (~250 MB).
 
 Just run `VaultOS-Setup.exe`, follow the prompts, and you're done. The installer handles everything — Python packages, model files, shortcuts, the works. No terminal commands, no manual setup, no "wait, which folder was it?"
+
+Want to see what's in each release? Check the [Release Notes](https://github.com/CraftedWebPro/vault-os/releases/tag/1.0.2).
 
 If you don't want to set up Flutter and Python by hand, this is the path for you. Click, install, done.
 
@@ -385,6 +387,10 @@ If you like the project, use it, test it, or share it — that's genuinely all t
 If you want to reach me:
 
 - Instagram: **[@riki_vivek](https://instagram.com/riki_vivek)**
+
+If you want to support the project:
+
+- [**GitHub Sponsors**](https://github.com/sponsors/CraftedWebPro) — buy me a coffee, fund the next feature, or just show some love. No pressure, no paywall, no guilt trip.
 
 ## License
 
