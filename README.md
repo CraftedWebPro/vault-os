@@ -46,6 +46,7 @@
 - [First-Time Use](#first-time-use)
 - [Important Notes](#important-notes)
 - [Troubleshooting](#troubleshooting)
+- [Security Model](#security-model)
 - [Support](#support)
 - [License](#license)
 
@@ -157,6 +158,12 @@ flutter run -d windows
 ```
 
 **Recovery can't find the vault** — point it at the exact vault folder (or its parent), and confirm the vault files still exist on disk.
+
+## Security Model
+
+Vault OS uses AES-256-GCM encryption with PBKDF2-HMAC-SHA256 key derivation (120k iterations). The vault key is constructed as `XOR(passphrase-derived key, biometric key)`, so both factors are required to decrypt.
+
+See **[SECURITY.md](SECURITY.md)** for the full threat model, encryption details, key derivation parameters, biometric profile storage, attack surface analysis, and brute-force considerations.
 
 ## Support
 
